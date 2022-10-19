@@ -5,7 +5,9 @@ import math
 def search_vuln(file):
    print("search in : " + file)
    #pattern = re.compile(r'"([\S])"')
-   pattern = re.compile('"([^\"]*)"')
+   pattern = re.compile(r'"([^"]*)"')
+   pattern2 = re.compile(r'"p([^"]*)d"', re.IGNORECASE)
+   pattern3 = re.compile(r'p([^"]*)d', re.IGNORECASE)
    f = open(file, 'r')
    n = 0
    while True:
@@ -13,16 +15,17 @@ def search_vuln(file):
        line = f.readline()
        if line == '':
            break
-       if ('pwd' in line) or ('password' in line) or ('Pwd' in line) or ('Password' in line):
+       #if ('pwd' in line) or ('password' in line) or ('Pwd' in line) or ('Password' in line):
+       if re.search(r'"p([^"]*)d"',line, re.IGNORECASE) is not None :
            pwd  = line
-           matched_list = re.findall(pattern, pwd)
-           print(matched_list)
+           matched_list = re.findall(r'"([^"]*)"', pwd)
            print(line)
-           if (len(matched_list) == 0 ) and ():
-               print("empty list")
-           else:
+           print(matched_list)
+           if (len(matched_list) != 0 ) and (re.match(r'p([^"]*)d',matched_list[0],re.IGNORECASE) is not None):
                print('location : ' + str(n) + ', str : ' + matched_list[-1])
-               if re.find(matched_list[-1])
+           else:
+               print('empty list')
+
            #calc_complexity( matched_list[-1])
 
    f.close()
@@ -68,11 +71,11 @@ if __name__ == "__main__":
     calc_shannon_entropy("thisistesthello")
     calc_shannon_entropy("thIsiSTestHElLo")
 
-    pattern = re.compile('"([^\"]*)"')
-
-    string = "\"hello\" \"world\""
-    matched_list = re.findall(pattern, string)
-
+    #pattern = re.compile('"([^\"]*)"')
+    pattern2 = re.compile(r'"p([^"]*)d"', re.IGNORECASE)
+    #string = "\"hello\" \"world\""
+    string = "\"password\""
+    matched_list = re.findall(pattern2, string)
     print(string)
     print(matched_list)
     if root_dir.strip()[-1] == "\\":
