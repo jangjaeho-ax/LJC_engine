@@ -24,18 +24,17 @@ for Reservation in response['Reservations']:
 print('InstanceDatas:',json.dumps(InstanceDatas, indent = 4))
 
 
-HOST= '172.31.35.246'
+HOST= '43.200.182.12'
 ID ='ec2-user'
 PASSWD =''
 key = paramiko.RSAKey.from_private_key_file("TEST.pem")
-ssh= paramiko.SSHClient()
+ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh.connect(hostname= HOST, username= ID, pkey=key)
 
 sftp = ssh.open_sftp()
-sftp.put('C:\\Users\\jjh96\\Desktop\\python\\ringax_ml_14_160.bin','home')
-sftp.get('/home/ec2-user','C:\\Users\\jjh96\\Desktop\\python\\ringax_ml_14_161.bin')
-
+#sftp.put('C:\\Users\\jjh96\\Desktop\\python\\c200_1_082.bin','test')
+sftp.get('_test.extracted','C:\\Users\\jjh96\\Desktop\\python\\_test_extracted')
 sftp.close()
 
 
