@@ -17,15 +17,20 @@ def search_vuln(file):
            break
        #if ('pwd' in line) or ('password' in line) or ('Pwd' in line) or ('Password' in line):
        if re.search(r'"p([^"]*)d"',line, re.IGNORECASE) is not None :
+           ret_str = None
            pwd  = line
            matched_list = re.findall(r'"([^"]*)"', pwd)
            print(line)
            print(matched_list)
            if (len(matched_list) != 0 ) and (re.match(r'p([^"]*)d',matched_list[0],re.IGNORECASE) is not None):
-               print('location : ' + str(n) + ', str : ' + matched_list[-1])
+               if not calc_complexity(matched_list[-1], ret_str):
+                   print('!'*10 + 'Weak password' + '!'*10)
+                   print('location : ' + str(n) + '\nstr : ' + matched_list[-1] + '\nreason :' + ret_str)
+               else:
+                   print('*'*10 + 'Good password' + '*'*10)
+                   print('location : ' + str(n) + '\nstr : ' + matched_list[-1] + '\nentropy :' + ret_str)
            else:
                print('empty list')
-
            #calc_complexity( matched_list[-1])
 
    f.close()
@@ -56,20 +61,39 @@ def calc_shannon_entropy(string):
             ent = ent + freq * math.log(freq, 2)
     print(-ent)
     return -ent
-
-def calc_complexity(str):
+'''
+def calc_complexity(str, reason=None):
     if len(str) < 8 and not re.findall(r'[0-9]+', str) and not re.findall(r'[a-z]', str) or not re.findall(r'[A-Z]', str):
         return False
     elif not re.findall('[`~!@#$%^&*(),<.>/?]+', str) :
         return False
     return True
-
+'''
+def calc_complexity(str, ret_str):
+    if len(str) < 8:
+        ret_str = 'Too Short password'
+        return False
+    elif not re.findall(r'[0-9]+', str):
+        ret_str = 'No numeric characters in password'
+        return False
+    elif not re.findall(r'[a-z]', str):
+        ret_str = 'No lowercase characters in password'
+        return False
+    elif not re.findall(r'[A-Z]',str):
+        ret_str = 'No Uppercase characters in password'
+        return False
+    elif not re.findall('[`~!@#$%^&*(),<.>/?]+', str):
+        ret_str = 'No special characters in password'
+        return False
+    ret_str = calc_shannon_entropy(str)
+    return True
 
 if __name__ == "__main__":
     root_dir = "C:\\Users\\jjh96\\_test.extracted\\squashfs-root\\"
     target_files = []
-    calc_shannon_entropy("thisistesthello")
-    calc_shannon_entropy("thIsiSTestHElLo")
+    '''
+    #calc_shannon_entropy("thisistesthello")
+    #calc_shannon_entropy("thIsiSTestHElLo")
 
     #pattern = re.compile('"([^\"]*)"')
     pattern2 = re.compile(r'"p([^"]*)d"', re.IGNORECASE)
@@ -78,6 +102,14 @@ if __name__ == "__main__":
     matched_list = re.findall(pattern2, string)
     print(string)
     print(matched_list)
+    '''
+    tpd1 = "Thiswat12!!"
+    tpd2 = "tetrs12"
+    if not calc_complexity(tpd1):
+        print(tpd1)
+    if not calc_complexity(tpd2):
+        print(tpd2)
+
     if root_dir.strip()[-1] == "\\":
         print(root_dir[:-1])
     for (root, dirs, files) in os.walk(root_dir):
