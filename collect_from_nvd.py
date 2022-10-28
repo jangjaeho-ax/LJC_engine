@@ -17,18 +17,19 @@ def search_vuln(file):
            break
        #if ('pwd' in line) or ('password' in line) or ('Pwd' in line) or ('Password' in line):
        if re.search(r'"p([^"]*)d"',line, re.IGNORECASE) is not None :
-           ret_str = None
            pwd  = line
            matched_list = re.findall(r'"([^"]*)"', pwd)
            print(line)
            print(matched_list)
            if (len(matched_list) != 0 ) and (re.match(r'p([^"]*)d',matched_list[0],re.IGNORECASE) is not None):
-               if not calc_complexity(matched_list[-1], ret_str):
+               ret = calc_complexity(matched_list[-1])
+               if ret != 'P':
                    print('!'*10 + 'Weak password' + '!'*10)
-                   print('location : ' + str(n) + '\nstr : ' + matched_list[-1] + '\nreason :' + ret_str)
+                   print('location : ' + str(n) + '\nstr : ' + matched_list[-1] + '\nreason :' + ret)
                else:
                    print('*'*10 + 'Good password' + '*'*10)
-                   print('location : ' + str(n) + '\nstr : ' + matched_list[-1] + '\nentropy :' + ret_str)
+                   print('location : ' + str(n) + '\nstr : ' + matched_list[-1] +
+                         '\nentropy :' + str(calc_shannon_entropy(str)))
            else:
                print('empty list')
            #calc_complexity( matched_list[-1])
@@ -69,24 +70,24 @@ def calc_complexity(str, reason=None):
         return False
     return True
 '''
-def calc_complexity(str, ret_str):
+def calc_complexity(str):
     if len(str) < 8:
         ret_str = 'Too Short password'
-        return False
+        return ret_str
     elif not re.findall(r'[0-9]+', str):
         ret_str = 'No numeric characters in password'
-        return False
+        return ret_str
     elif not re.findall(r'[a-z]', str):
         ret_str = 'No lowercase characters in password'
-        return False
+        return ret_str
     elif not re.findall(r'[A-Z]',str):
         ret_str = 'No Uppercase characters in password'
-        return False
+        return ret_str
     elif not re.findall('[`~!@#$%^&*(),<.>/?]+', str):
         ret_str = 'No special characters in password'
-        return False
-    ret_str = calc_shannon_entropy(str)
-    return True
+        return ret_str
+    ret_str = 'P'
+    return ret_str
 
 if __name__ == "__main__":
     root_dir = "C:\\Users\\jjh96\\_test.extracted\\squashfs-root\\"
@@ -102,13 +103,27 @@ if __name__ == "__main__":
     matched_list = re.findall(pattern2, string)
     print(string)
     print(matched_list)
+        tpd1 = "Thiswat12!!"
+    tpd2 = "teTrsdklwf12"
+    ret = calc_complexity(tpd1)
+    if ret != 'P':
+        print('!' * 10 + 'Weak password' + '!' * 10)
+        print('\nstr : ' + tpd1 + '\nreason :' + ret)
+    else:
+        print('*' * 10 + 'Good password' + '*' * 10)
+        print('\nstr : ' + tpd1 +
+              '\nentropy :' + str(calc_shannon_entropy(tpd1)))
+        ret = calc_complexity(tpd2)
+    if ret != 'P':
+        print('!' * 10 + 'Weak password' + '!' * 10)
+        print('\nstr : ' + tpd2 + '\nreason :' + ret)
+    else:
+        print('*' * 10 + 'Good password' + '*' * 10)
+        print('\nstr : ' + tpd2 +
+              '\nentropy :' + str(calc_shannon_entropy(tpd2)))
     '''
-    tpd1 = "Thiswat12!!"
-    tpd2 = "tetrs12"
-    if not calc_complexity(tpd1):
-        print(tpd1)
-    if not calc_complexity(tpd2):
-        print(tpd2)
+
+
 
     if root_dir.strip()[-1] == "\\":
         print(root_dir[:-1])
