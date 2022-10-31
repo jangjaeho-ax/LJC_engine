@@ -1,6 +1,6 @@
 import pyhidra
 import os
-
+from pycvesearch import CVESearch
 def bin_to_ghidra(path):
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam") as flat_api:
         program = flat_api.getCurrentProgram()
@@ -43,4 +43,7 @@ def get_so_name(root_dir):
 if __name__ == "__main__":
     path = r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so"
     root_dir =r"C:\Users\jjh96\_test.extracted\squashfs-root\lib"
-    get_so_name(root_dir)
+    #cve =CVESearch('https://cve.circl.lu')
+    #result = cve.cpe22('cpe:/a:libavformat_project:libavformat:57.34.103')
+    #print(result.text)
+    #get_so_name(root_dir)
