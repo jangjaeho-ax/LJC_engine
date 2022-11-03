@@ -1,6 +1,7 @@
 import pyhidra
 import os
 import collect_CI
+from elftools.elf import elffile as elf
 def bin_to_ghidra(path):
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam") as flat_api:
         program = flat_api.getCurrentProgram()
@@ -12,6 +13,7 @@ def bin_to_ghidra(path):
         decomp_api = FlatDecompilerAPI(flat_api)
         # ...
         decomp_api.dispose()
+
 def get_so_name(root_dir):
     target_files = {}
     if root_dir.strip()[-1] == "\\":
@@ -57,3 +59,5 @@ if __name__ == "__main__":
         #print(k[0:i])
         collect_CI.search_cpe22(k[0:i])
         #collect_CI.search_cve(k[0:i])
+    test_f = open(path, "rb")
+    e =elf.ELFFile(test_f)
