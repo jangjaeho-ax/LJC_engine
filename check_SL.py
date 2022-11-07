@@ -2,12 +2,23 @@ import pyhidra
 import os
 import collect_CI
 from elftools.elf import elffile as elf
+import pdb
 def bin_to_ghidra(path):
-    with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam") as flat_api:
+    with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam", analyze=False ) as flat_api:
         program = flat_api.getCurrentProgram()
-        listing = program.getListing()
-        print(listing.getCodeUnitAt(flat_api.toAddr(0x1234)))
+        #listing = program.getListing()
+        #print(listing.getCodeUnitAt(flat_api.toAddr(0x1234)))
 
+        function_manager = program.getFunctionManager()
+        funtion_iter = function_manager.getFunctions(True)
+        done_looping = False
+        while not done_looping:
+            try:
+                item = next(funtion_iter)
+            except StopIteration:
+                done_looping = True
+            else:
+                print(item)
         # We are also free to import ghidra while in this context to do more advanced things.
         from ghidra.app.decompiler.flatapi import FlatDecompilerAPI
         decomp_api = FlatDecompilerAPI(flat_api)
@@ -54,10 +65,14 @@ if __name__ == "__main__":
     #print(result.text)
     target_files = get_so_name(root_dir)
     print(target_files)
+    bin_to_ghidra(path)
+    '''
     for k in target_files.keys():
         i = k.find('.so')
         #print(k[0:i])
         collect_CI.search_cpe22(k[0:i])
         #collect_CI.search_cve(k[0:i])
+    '''
     test_f = open(path, "rb")
     e =elf.ELFFile(test_f)
+    print(e.header)

@@ -1,9 +1,9 @@
-import re
+import os
+import argparse
 import requests
 import json
-from selenium.common import NoSuchElementException
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+import sys
+
 from bs4 import BeautifulSoup
 import pandas as pd
 '''
@@ -45,7 +45,7 @@ def search_cpe22(keyword):
             return
         else:
             if results_count != '1':
-                pprint("예외처리")
+                print("예외처리")
             results = soup.find('div', attrs={'class': 'searchResults'})
             result = results.find('div', attrs={'class': 'col-lg-12'}).find('strong').find('a')
             print(keyword+' : '+ result.getText())
@@ -53,6 +53,26 @@ def search_cpe22(keyword):
     else:
         print(response.status_code)
         return
+def lookup_cpe(word):
+    #runPath = os.path.dirname(os.path.realpath(__file__))
+    #sys.path.append(os.path.join(runPath, ".."))
+    from cpeguesser import CPEGuesser
+
+    parser = argparse.ArgumentParser(
+        description='Find potential CPE names from a list of keyword(s) and return a JSON of the results'
+    )
+    parser.add_argument(
+        'word',
+        metavar='WORD',
+        type=str,
+        nargs='+',
+        help='One or more keyword(s) to lookup',
+    )
+    args = parser.parse_args()
+
+    cpeGuesser = CPEGuesser()
+    print(json.dumps(cpeGuesser.guessCpe(args.word)))
+    return
 def search_cve(keyword):
     #수정필요
     url = r'https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&query= '+keyword+' &search_type=all&isCpeNameSearch=false'
@@ -81,5 +101,6 @@ def search_cve(keyword):
 if __name__ == "__main__":
     url = r"https://www.opencve.io/cve?cvss=&search=libavformat"
     #search_cpe23(';!!@!@#@!!#@122')
-    search_cve('libavformat')
+    #search_cve('libavformat')
+    lookup_cpe()
     #collect_cve_inform(url)
