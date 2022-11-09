@@ -58,20 +58,20 @@ def search_cpe22(keyword):
 def search_cve(keyword):
 
     #nvd api를 이용
-    base_url = r'https://services.nvd.nist.gov/rest/json/cves/2.0?'
-    url = base_url+'pubStartDate=2020-01-01T00:00:00.000&pubEndDate='+str(datetime.date.today())+'T00:00:00.000'
+    base_url = r'https://services.nvd.nist.gov/rest/json/cves/2.0'
+    #url = base_url+'pubStartDate=2020-01-01T00:00:00.000&pubEndDate='+str(datetime.date.today())+'T00:00:00.000'
     headers = {'Accept': 'application/json'}
     #개인 키
     auth = HTTPBasicAuth('apikey', '3a199e6c-3c95-4e84-b4fa-9061f296b6b5 ')
     #https://nvd.nist.gov/developers/vulnerabilities 참고
 
-    payload = {'keywords' : keyword, 'page limit' : 2000}
-    response = requests.get(url, headers=headers, auth=auth, params =payload)
+    payload = {'pubStartDate' : '2020-01-01T00:00:00.000','pubEndDate': str(datetime.date.today())+ 'T00:00:00.000','keywordSearch' : keyword,}
+    response = requests.get(base_url, headers=headers, auth=auth, params =payload)
     #url = r'https://nvd.nist.gov/vuln/search'
-
+    print(response.url)
     if response.status_code == 200:
         html = response.content
-        print(response.url)
+
         soup = BeautifulSoup(html, 'html.parser')
         '''
         results_count = soup.find('strong', attrs={'data-testid': 'vuln-matching-records-count'}).getText()
@@ -96,6 +96,7 @@ if __name__ == "__main__":
     url = r"https://www.opencve.io/cve?cvss=&search=libavformat"
 
     #search_cpe22('libavformat')
-    search_cve(search_cpe22('libavformat'))
+    #search_cve(search_cpe22('libavformat'))
+    search_cve('libavformat')
     #lookup_cpe('libavformat')
     #collect_cve_inform(url)
