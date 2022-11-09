@@ -2,7 +2,6 @@ import os
 import argparse
 from requests.auth import HTTPBasicAuth
 import requests
-import datetime
 import json
 import sys
 
@@ -40,6 +39,8 @@ def search_cpe22(keyword):
     if response.status_code == 200:
         html = response.content
         soup = BeautifulSoup(html, 'html.parser')
+        soup.find('input',{'id' : 'Keywords'})['value'] =keyword
+
         results_count = soup.find('strong',attrs ={'data-testid':'cpe-matching-records-count'}).getText()
         #print(results_count)
         print('{0} : cve 검색결과 수 {1}'.format(keyword, results_count))
@@ -55,46 +56,55 @@ def search_cpe22(keyword):
     else:
         print(response.status_code)
         return
+def lookup_cpe(word):
+    #runPath = os.path.dirname(os.path.realpath(__file__))
+    #sys.path.append(os.path.join(runPath, ".."))
+    #from cpeguesser import CPEGuesser
+    '''
+    parser = argparse.ArgumentParser(
+        description='Find potential CPE names from a list of keyword(s) and return a JSON of the results'
+    )
+    parser.add_argument(
+        'word',
+        metavar='WORD',
+        type=str,
+        nargs='+',
+        help='One or more keyword(s) to lookup',
+    )
+    args = parser.parse_args()
+    '''
+    #cpeGuesser = CPEGuesser()
+    #print(json.dumps(cpeGuesser.guessCpe(word)))
+    return
 def search_cve(keyword):
-
-    #nvd api를 이용
-    base_url = r'https://services.nvd.nist.gov/rest/json/cves/2.0?'
-    url = base_url+'pubStartDate=2020-01-01T00:00:00.000&pubEndDate='+str(datetime.date.today())+'T00:00:00.000'
-    headers = {'Accept': 'application/json'}
-    #개인 키
-    auth = HTTPBasicAuth('apikey', '3a199e6c-3c95-4e84-b4fa-9061f296b6b5 ')
-    #https://nvd.nist.gov/developers/vulnerabilities 참고
-
-    payload = {'keywords' : keyword, 'page limit' : 2000}
-    response = requests.get(url, headers=headers, auth=auth, params =payload)
+    #수정필요
+    url = r'https://nvd.nist.gov/vuln/search/results?form_type=Basic&results_type=overview&query= '+keyword+' &search_type=all&isCpeNameSearch='
     #url = r'https://nvd.nist.gov/vuln/search'
 
+    response = requests.get(url)
     if response.status_code == 200:
         html = response.content
-        print(response.url)
         soup = BeautifulSoup(html, 'html.parser')
-        '''
         results_count = soup.find('strong', attrs={'data-testid': 'vuln-matching-records-count'}).getText()
         #print(results_count)
         print('{0} : cve 검색결과 수 {1}'.format(keyword, results_count))
         if results_count == '0':
             return
-        '''
-        table = soup.find('table', attrs={'id': 'cves'})
-        table_html = str(table)
-        table_df_list = pd.read_html(table_html)
-        print(table_df_list)
-        ###
-        # result = results.find('div', attrs={'class': 'col-lg-12'}).find('strong').find('a')
-        # print(keyword + ' : ' + result.getText())
-        return
+        else:
+            table = soup.find('table', attrs={'data-testid': 'vuln-results-table'})
+            table_html =str(table)
+            table_df_list = pd.read_html(table_html)
+            print(table_df_list)
+            ###
+            #result = results.find('div', attrs={'class': 'col-lg-12'}).find('strong').find('a')
+            #print(keyword + ' : ' + result.getText())
+            return
     else:
         print(response.status_code)
         return
 
 if __name__ == "__main__":
     url = r"https://www.opencve.io/cve?cvss=&search=libavformat"
-
     #search_cpe22('libavformat')
     search_cve(search_cpe22('libavformat'))
     #lookup_cpe('libavformat')
