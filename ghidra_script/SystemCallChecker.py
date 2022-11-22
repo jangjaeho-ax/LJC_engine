@@ -1,10 +1,13 @@
 # Checks system calls for command injection patterns
-# @author
+# @author jang
 # @category HackOvert
 # @keybinding
 # @menupath
 # @toolbar
-
+import io
+import json
+import getpass
+import os
 from ghidra.app.decompiler import DecompileOptions
 from ghidra.app.decompiler import DecompInterface
 from ghidra.program.model.pcode import Varnode
@@ -165,10 +168,28 @@ def main():
             # dict for json dump
             vuln = dict()
             vuln['func_name'] = func.name
-            vuln['address'] = addresses[func.name]
+            vuln['address'] = str(addresses[func.name])
             injc_vuln_group[count] = vuln
-            print("  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name))
             count = count+1
+            print("  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name))
+    #store result to json file
+    username = getpass.getuser()
+    program_path = str(currentProgram.getExecutablePath())
+    target = '\\'
+    index = -1
+    while True:
+        ret = program_path.find(target, index + 1)
+        if ret == -1:
+            break
+        index =ret
+    #print('start=%d' % index)
+    json_name = program_path[index:]+'_result.json'
+    folder_name ='C:\\Users\\'+username+'\\results'
+    try:
+        os.mkdir(folder_name)
+    except OSError:
+        print('File is already existed.')
+    json_path = folder_name+json_name+'_results.json'
 
     print(injc_vuln_group)
 

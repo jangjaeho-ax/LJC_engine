@@ -17,6 +17,9 @@ class analyzer:
             function_manager = program.getFunctionManager()
             functions = [func for func in function_manager.getFunctions(True)]
             function_names = [func.name for func in functions]
+            print(program.getExecutablePath())
+
+            '''
             addresses = {}
             for function in functions:
                 try:
@@ -25,7 +28,6 @@ class analyzer:
                     addresses[function.name] = []
                     addresses[function.name].append(function.getEntryPoint())
             print(addresses)
-            '''
             funtion_iter = function_manager.getFunctions(True)
             done_looping = False
             while not done_looping:
@@ -36,11 +38,22 @@ class analyzer:
                 else:
                     print(item)
             '''
+            return function_names
     def run_script(self,script_name):
         script_path = r'/ghidra/'+script_name+'.py'
+        print(script_path)
         pyhidra.run_script(self.path,script_path)
-    def get_filename(self):
-        return
+    def get_filepath(self):
+        return self.path
+    def test(self):
+        with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
+                                  analyze=False) as flat_api:
+            program = flat_api.getCurrentProgram()
+            uid =program.getUniqueProgramID()
+            program_context = program.getProgramContext()
+            print()
+            print('uid : ' + str(uid))
+            #print('program_context : ' + program_context)
 
 '''
 def get_functions(path):
@@ -71,8 +84,10 @@ if __name__ == "__main__":
     path = r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so"
     root_dir =r"C:\Users\jjh96\_test.extracted\squashfs-root\lib"
     a = analyzer(path)
-    a.get_functions()
-    a.run_script('SystemCallChecker')
+    #a.test()
+
+    #a.get_functions()
+    a.run_script('SystemCallChecker_test')
     #test_f = open(path, "rb")
     #e =elf.ELFFile(test_f)
     #print(e.header)
