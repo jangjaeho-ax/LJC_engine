@@ -4,6 +4,8 @@
 # potentially vulnerable functions
 
 import json
+import io
+import getpass
 from ghidra.program.model.listing import CodeUnit
 
 sinks = [
@@ -69,8 +71,31 @@ def main():
                     count = count + 1
                     print('--------')
 
+
     print("[!] Done! {} possible vulnerabilities found.".format(count))
     print(overflow_vuln_group)
-
+    # _____________________store result to json file_____________________
+    # get user name
+    username = getpass.getuser()
+    # get program name
+    program_path = str(currentProgram.getExecutablePath())
+    target = '\\'
+    index = -1
+    while True:
+        ret = program_path.find(target, index + 1)
+        if ret == -1:
+            break
+        index = ret
+    # print('start=%d' % index)
+    json_name = program_path[index:] + '_result.json'
+    folder_name = 'C:\\Users\\' + username + '\\results'
+    # create folder for results
+    try:
+        os.mkdir(folder_name)
+    except OSError:
+        print('File is already existed.')
+    json_path = folder_name + json_name + '_results.json'
+    with io.open(json_path, 'wb') as make_file:
+        json.dump(overflow_vuln_group, make_file)
 if __name__ == '__main__':
    main()

@@ -172,8 +172,10 @@ def main():
             injc_vuln_group[count] = vuln
             count = count+1
             print("  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name))
-    #store result to json file
+    #_____________________store result to json file_____________________
+    #get user name
     username = getpass.getuser()
+    #get program name
     program_path = str(currentProgram.getExecutablePath())
     target = '\\'
     index = -1
@@ -185,12 +187,14 @@ def main():
     #print('start=%d' % index)
     json_name = program_path[index:]+'_result.json'
     folder_name ='C:\\Users\\'+username+'\\results'
+    #create folder for results
     try:
         os.mkdir(folder_name)
     except OSError:
         print('File is already existed.')
     json_path = folder_name+json_name+'_results.json'
-
+    with io.open(json_path, 'wb') as make_file:
+        json.dump(injc_vuln_group, make_file)
     print(injc_vuln_group)
 
 if __name__ == "__main__":

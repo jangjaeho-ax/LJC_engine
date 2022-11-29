@@ -1,4 +1,5 @@
 import pyhidra
+import getpass
 import os
 import collect_CI
 from elftools.elf import elffile as elf
@@ -9,7 +10,12 @@ import pdb
 class analyzer:
     def __init__(self, path):
         self.path = path
-
+        with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
+                                  analyze=False) as flat_api:
+            self.program = flat_api.getCurrentProgram()
+            self.function_manager = self.program.getFunctionManager()
+    def __del__(self):
+        print('delete analyzer : {0}'.format(self.path))
     def get_functions(self):
         with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                                   analyze=False) as flat_api:
@@ -40,8 +46,10 @@ class analyzer:
             '''
             return function_names
     def run_script(self,script_name):
-        script_path = r'/ghidra/'+script_name+'.py'
+        script_path = os.getcwd()+'\\ghidra_script\\'+script_name+'.py'
+        #print(os.getcwd())
         print(script_path)
+        print(self.path)
         pyhidra.run_script(self.path,script_path)
     def get_filepath(self):
         return self.path
