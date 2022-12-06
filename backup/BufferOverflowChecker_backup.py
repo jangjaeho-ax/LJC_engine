@@ -1,6 +1,5 @@
 import json
 import io
-import os
 import getpass
 import pyhidra
 
@@ -17,6 +16,31 @@ sinks = [
     "vsprinf"
 ]
 
+
+def add_bookmark_comment(address, category, description, program):
+    cu = program.getListing().getCodeUnitAt(address)
+    program.createBookmark(address, category, description)
+    cu.setComment(CodeUnit.EOL_COMMENT, description)
+
+
+def find_danger_func():
+
+    addresses = {}
+    function = getFirstFunction()
+    while function is not None:
+        if monitor.isCancelled():
+            return doCancel()
+
+        if function.name in sinks:
+            try:
+                addresses[function.name].append(function.getEntryPoint())
+            except:
+                addresses[function.name] = []
+                addresses[function.name].append(function.getEntryPoint())
+
+        function = getFunctionAfter(function)
+
+    return addresses
 def main(path):
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                               analyze=False) as flat_api:
@@ -30,7 +54,7 @@ def main(path):
         function = flat_api.getFirstFunction()
         while function is not None:
             if monitor.isCancelled():
-                return
+                doCancel()
             if function.name in sinks:
                 try:
                     addresses[function.name].append(function.getEntryPoint())
@@ -54,10 +78,11 @@ def main(path):
                     if (from_ins is not None) and (to_ins is not None):
                         print('Address: {}'.format(from_addr))
                         print('Instruction: {}({})'.format(from_ins.toString(), func_name))
+                        add_bookmark_comment(from_addr, 'Possibility of buffer overflow', func_name + ' is unsafe...',program)
                         # dict for json dump
                         vuln = dict()
-                        vuln['func_name'] = str(func_name)
-                        vuln['address'] = str(from_addr)
+                        vuln['func_name'] = func_name
+                        vuln['address'] = from_addr
                         overflow_vuln_group[count] = vuln
                         count = count + 1
                         print('--------')
@@ -86,7 +111,7 @@ def main(path):
         except OSError:
             print('File is already existed.')
         json_path = folder_name + json_name + '_results.json'
-        with io.open(json_path, 'w') as make_file:
+        with io.open(json_path, 'wb') as make_file:
             json.dump(overflow_vuln_group, make_file)
 if __name__ == '__main__':
-   main( r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so")
+   main()

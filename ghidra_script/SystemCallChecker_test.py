@@ -114,7 +114,7 @@ def sys_call_check(path):
             print('File is already existed.')
         json_path = folder_name + json_name + '_results.json'
         print(json_path)
-        with io.open(json_path, 'wb') as make_file:
+        with io.open(json_path, 'w') as make_file:
             json.dump(injc_vuln_group, make_file)
 
 if __name__ == "__main__":

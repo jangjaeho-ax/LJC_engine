@@ -27,6 +27,27 @@ bitness_masks = {
     '32': 0xffffffff,
     '64': 0xffffffffffffffff,
 }
+def int_overflow(func, ref):
+    with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
+                              analyze=False) as flat_api:
+        program = flat_api.getCurrentProgram()
+        symbolTable =program.getSymbolTable()
+        fm = program.getFunctionManager()
+        functions = [func for func in fm.getFunctions(True)]
+        # vuln group for json dump
+        injc_vuln_group = dict()
+        # store all entry points of function
+        addresses = {}
+        count = 0
+        for function in functions:
+            try:
+                addresses[function.name].append(function.getEntryPoint())
+            except:
+                addresses[function.name] = []
+                addresses[function.name].append(function.getEntryPoint())
+
+
+
 
 
 def get_high_function(func , program):
