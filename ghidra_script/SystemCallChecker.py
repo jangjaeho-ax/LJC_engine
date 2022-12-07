@@ -4,6 +4,7 @@ import json
 import getpass
 import os
 import pyhidra
+from pprint import pprint as pp
 pyhidra.start()
 
 import ghidra
@@ -75,6 +76,10 @@ def get_stack_var_from_varnode(func, varnode, program):
 
 
 def sys_call_check(path):
+    result = {}
+    text = []
+    num = 0
+
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                               analyze=False) as flat_api:
         program = flat_api.getCurrentProgram()
@@ -96,9 +101,13 @@ def sys_call_check(path):
         function_names = [func.name for func in functions]
         if (set(sources) & set(function_names)) and (set(sinks) & set(function_names)):
             print("This target contains interesting source(s) and sink(s). Continuing analysis...")
+            text.append("This target contains interesting source(s) and sink(s). Continuing analysis..."+ '\n')
         else:
             print("This target does not contain interesting source(s) and sink(s). Done.")
-            return
+            text.append("This target does not contain interesting source(s) and sink(s). Done." + '\n')
+            result['text'] = text
+            result['num'] = num
+            return result
 
         # ====================================================================
         # Step 2. Find functions that calls at least one source and one sink
@@ -117,16 +126,22 @@ def sys_call_check(path):
         # Show any interesting functions found
         if len(interesting_functions) <= 0:
             print("\nNo interesting functions found to analyze. Done.")
-            return
+            text.append("\nNo interesting functions found to analyze. Done." + '\n')
+            result['text'] = text
+            result['num'] = num
+            return result
         else:
             print("\nFound {} interesting functions to analyze:".format(len(interesting_functions)))
+            text.append(str("\nFound {} interesting functions to analyze:".format(len(interesting_functions)))+ '\n')
             for func in interesting_functions:
                 print("  {}".format(func.name))
+                text.append(str("  {}".format(func.name)) + '\n')
 
         # ====================================================================
         # Step 3. Dig into interesting functions
         for func in interesting_functions:
             print("\nAnalyzing function: {}".format(func.name))
+            text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')
 
             source_args = []
             sink_args = []
@@ -146,25 +161,31 @@ def sys_call_check(path):
                         arg = opinputs[1]
                         sv = get_stack_var_from_varnode(func, arg, program)
                         if sv:
+                            num += 1
                             addr = op.getSeqnum().getTarget()
                             sink_args.append(sv.getName())
                             print("  >> {} : system({})".format(addr, sv.getName()))
+                            text.append(str("  >> {} : system({})".format(addr, sv.getName())) + '\n')
 
                     elif call_target_name == "sprintf":
                         arg = opinputs[1]
                         sv = get_stack_var_from_varnode(func, arg, program)
                         if sv:
+                            num += 1
                             addr = op.getSeqnum().getTarget()
                             source_args.append(sv.getName())
                             print("  >> {} : sprintf({}, ...)".format(addr, sv.getName()))
+                            text.append(str("  >> {} : sprintf({}, ...)".format(addr, sv.getName())) + '\n')
 
                     elif call_target_name == "snprintf":
                         arg = opinputs[1]
                         sv = get_stack_var_from_varnode(func, arg, program)
                         if sv:
+                            num += 1
                             addr = op.getSeqnum().getTarget()
                             source_args.append(sv.getName())
                             print("  >> {} : snprintf({}, ...)".format(addr, sv.getName()))
+                            text.append(str("  >> {} : snprintf({}, ...)".format(addr, sv.getName())) + '\n')
 
             if len(set(sink_args) & set(source_args)) > 0:
                 # dict for json dump
@@ -175,6 +196,7 @@ def sys_call_check(path):
                 count = count + 1
                 print(
                     "  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name))
+                text.append(str("  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name)) + '\n')
         # _____________________store result to json file_____________________
         # get user name
         username = getpass.getuser()
@@ -200,7 +222,12 @@ def sys_call_check(path):
             json.dump(injc_vuln_group, make_file)
         print(injc_vuln_group)
 
+        result['text'] = text
+        result['num'] = num
+        return result
 
 if __name__ == "__main__":
     path = r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so"
-    sys_call_check(path)
+    result = sys_call_check(path)
+    pp(result['text'])
+    print(result['num'])

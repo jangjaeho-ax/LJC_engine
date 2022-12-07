@@ -74,6 +74,10 @@ def get_stack_var_from_varnode(func, varnode, program):
 
 
 def sys_call_check(path):
+    result = {}
+    text = []
+    num = 0
+
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                               analyze=False) as flat_api:
         program = flat_api.getCurrentProgram()
