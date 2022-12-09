@@ -7,6 +7,13 @@ import pyhidra
 pyhidra.start()
 import ghidra
 from ghidra.program.model.listing import CodeUnit
+from ghidra.app.decompiler import DecompileOptions
+from ghidra.app.decompiler import DecompInterface
+from ghidra.program.model.pcode import Varnode
+from ghidra.program.model.pcode import VarnodeAST
+from ghidra.util.task import ConsoleTaskMonitor
+
+
 
 sinks = [
     "getpw",
@@ -17,7 +24,7 @@ sinks = [
     "vsprinf"
 ]
 
-def buf_ovfw_check(path):
+def check_buf_ovfw(path):
     result = {}
     text = []
     num = 0
@@ -29,11 +36,24 @@ def buf_ovfw_check(path):
         text.append(str('[+] Checking possibility of buffer overflow....') + '\n')
         text.append(str('--------') + '\n')
         program = flat_api.getCurrentProgram()
+        fm = program.getFunctionManager()
+        functions = [func for func in fm.getFunctions(True)]
         listing = program.getListing()
         monitor = flat_api.getMonitor()
-        #addresses = find_danger_func()
+
+        # addresses = find_danger_func()
         addresses = {}
-        function = flat_api.getFirstFunction()
+        count = 0
+        # vuln group for json dump
+        overflow_vuln_group = dict()
+
+        for function in functions:
+            try:
+                addresses[function.name].append(function.getEntryPoint())
+            except:
+                addresses[function.name] = []
+                addresses[function.name].append(function.getEntryPoint())
+                '''
         while function is not None:
             if monitor.isCancelled():
                 return
@@ -45,11 +65,50 @@ def buf_ovfw_check(path):
                     addresses[function.name].append(function.getEntryPoint())
 
             function = flat_api.getFunctionAfter(function)
-        count = 0
-        # vuln group for json dump
-        overflow_vuln_group = dict()
+        '''
+        # ====================================================================
+        # Step 1. Check if our target has at least one source and one sink we care about
+        function_names = [func.name for func in functions]
+        if  (set(sinks) & set(function_names)):
+            print("This target contains interesting sink(s). Continuing analysis...")
+            text.append("This target contains interesting sink(s). Continuing analysis..." + '\n')
+        else:
+            print("This target does not contain interesting sink(s). Done.")
+            text.append("This target does not contain interesting  sink(s). Done." + '\n')
+            result['text'] = text
+            result['num'] = num
+            return result
 
+        interesting_functions = []
+        for func in functions:
+
+            monitor = ConsoleTaskMonitor()
+            called_functions = func.getCalledFunctions(monitor)
+
+            called_function_names = [cf.name for cf in called_functions]
+
+            sink_callers = set(called_function_names) & set(sinks)
+
+            if sink_callers:
+                interesting_functions.append(func)
+
+        # Show any interesting functions found
+        if len(interesting_functions) <= 0:
+            print("\nNo interesting functions found to analyze. Done.")
+            text.append("\nNo interesting functions found to analyze. Done." + '\n')
+            result['text'] = text
+            result['num'] = num
+            return result
+        else:
+            print("\nFound {} interesting functions to analyze:".format(len(interesting_functions)))
+            text.append(str("\nFound {} interesting functions to analyze:".format(len(interesting_functions))) + '\n')
+            for func in interesting_functions:
+                print("  {}".format(func.name))
+                text.append(str("  {}".format(func.name)) + '\n')
         for func_name in addresses:
+            print("\nAnalyzing function: {}".format(func.name))
+            text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')
+
             for address in addresses[func_name]:
                 references = flat_api.getReferencesTo(address)
                 for ref in references:
@@ -104,6 +163,6 @@ def buf_ovfw_check(path):
         result['num'] = num
         return result
 if __name__ == '__main__':
-   result = buf_ovfw_check(r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so")
+   result = check_buf_ovfw(r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so")
    pp(result['text'])
    print(result['num'])

@@ -13,43 +13,13 @@ from ghidra.program.model.pcode import Varnode
 from ghidra.program.model.pcode import VarnodeAST
 from ghidra.util.task import ConsoleTaskMonitor
 
-sources = [
-    'snprintf',  # int snprintf ( char * s, size_t n, const char * format, ... );
-    'sprintf',  # int sprintf  ( char * s, const char * format, ... );
-]
 
 sinks = [
-    'system',  # int system(const char *command);
+    'memcpy'
 ]
 
-bitness_masks = {
-    '16': 0xffff,
-    '32': 0xffffffff,
-    '64': 0xffffffffffffffff,
-}
-def int_overflow(func, ref):
-    with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
-                              analyze=False) as flat_api:
-        program = flat_api.getCurrentProgram()
-        symbolTable =program.getSymbolTable()
-        fm = program.getFunctionManager()
-        functions = [func for func in fm.getFunctions(True)]
-        # vuln group for json dump
-        injc_vuln_group = dict()
-        # store all entry points of function
-        addresses = {}
-        count = 0
-        for function in functions:
-            try:
-                addresses[function.name].append(function.getEntryPoint())
-            except:
-                addresses[function.name] = []
-                addresses[function.name].append(function.getEntryPoint())
 
-
-
-
-
+#함수를 디컴파일 하여 pcode를 얻을 수 있도록 한다.
 def get_high_function(func , program):
     options = DecompileOptions()
     monitor = ConsoleTaskMonitor()
@@ -59,7 +29,7 @@ def get_high_function(func , program):
     res = ifc.decompileFunction(func, 60, monitor)
     return res.getHighFunction()
 
-
+'''
 def get_stack_var_from_varnode(func, varnode, program):
     if type(varnode) not in [Varnode, VarnodeAST]:
         raise Exception(
@@ -93,9 +63,17 @@ def get_stack_var_from_varnode(func, varnode, program):
 
     # unable to resolve stack variable for given varnode
     return None
+'''
 
 
-def sys_call_check(path):
+
+
+def check_int_overflow(path):
+    result = {}
+    text = []
+    num = 0
+
+
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                               analyze=False) as flat_api:
         program = flat_api.getCurrentProgram()
@@ -113,26 +91,28 @@ def sys_call_check(path):
                 addresses[function.name] = []
                 addresses[function.name].append(function.getEntryPoint())
         # ====================================================================
-        # Step 1. Check if our target has at least one source and one sink we care about
+        # source와 sink가 function name에 있는지 확인
         function_names = [func.name for func in functions]
-        if (set(sources) & set(function_names)) and (set(sinks) & set(function_names)):
+
+        if  (set(sinks) & set(function_names)):
             print("This target contains interesting source(s) and sink(s). Continuing analysis...")
         else:
             print("This target does not contain interesting source(s) and sink(s). Done.")
             return
 
         # ====================================================================
-        # Step 2. Find functions that calls at least one source and one sink
+        #sink와 source를 call하는 함수를 찾음
         interesting_functions = []
         for func in functions:
+
             monitor = ConsoleTaskMonitor()
             called_functions = func.getCalledFunctions(monitor)
+
             called_function_names = [cf.name for cf in called_functions]
 
-            source_callers = set(called_function_names) & set(sources)
             sink_callers = set(called_function_names) & set(sinks)
 
-            if source_callers and sink_callers:
+            if sink_callers:
                 interesting_functions.append(func)
 
         # Show any interesting functions found
@@ -145,83 +125,70 @@ def sys_call_check(path):
                 print("  {}".format(func.name))
 
         # ====================================================================
-        # Step 3. Dig into interesting functions
+        # 위에서 찾은 interesting functions을 분석하는 단계
         for func in interesting_functions:
             print("\nAnalyzing function: {}".format(func.name))
-
-            source_args = []
-            sink_args = []
-
             hf = get_high_function(func, program)
             opiter = hf.getPcodeOps()
+            op = None
+            signed_comparison_varnodes = set()
+
             while opiter.hasNext():
                 op = opiter.next()
                 mnemonic = op.getMnemonic()
-                if mnemonic == "CALL":
-                    opinputs = op.getInputs()
-                    call_target = opinputs[0]
-                    call_target_addr = call_target.getAddress()
-                    call_target_name = fm.getFunctionAt(call_target_addr).getName()
+                if (op.getOpcode() == ghidra.program.model.pcode.PcodeOp.INT_SLESS) or (
+                        op.getOpcode() == ghidra.program.model.pcode.PcodeOp.INT_LESS):
+                    print(op)
+                    for v in op.getInputs():
+                        if v.isConstant():
+                            continue
+                        signed_comparison_varnodes.add(v)
+                        # print(v)
+                        # print(v.isRegister())
+                    print(signed_comparison_varnodes)
 
-                    if call_target_name == "system":
-                        arg = opinputs[1]
-                        sv = get_stack_var_from_varnode(func, arg, program)
-                        if sv:
-                            addr = op.getSeqnum().getTarget()
-                            sink_args.append(sv.getName())
-                            print("  >> {} : system({})".format(addr, sv.getName()))
+                if op.getOpcode() == ghidra.program.model.pcode.PcodeOp.CALL:
+                    continue
+                inputs = op.getInputs()
+                call_site = inputs[0]
 
-                    elif call_target_name == "sprintf":
-                        arg = opinputs[1]
-                        sv = get_stack_var_from_varnode(func, arg, program)
-                        if sv:
-                            addr = op.getSeqnum().getTarget()
-                            source_args.append(sv.getName())
-                            print("  >> {} : sprintf({}, ...)".format(addr, sv.getName()))
+                # 주소가 아닌 경우 continue
+                if call_site.isAddress() == False:
+                    continue
 
-                    elif call_target_name == "snprintf":
-                        arg = opinputs[1]
-                        sv = get_stack_var_from_varnode(func, arg, program)
-                        if sv:
-                            addr = op.getSeqnum().getTarget()
-                            source_args.append(sv.getName())
-                            print("  >> {} : snprintf({}, ...)".format(addr, sv.getName()))
+                call_offset = call_site.getOffset()
+                func_offset = func.getEntryPoint().getOffset()
 
-            if len(set(sink_args) & set(source_args)) > 0:
-                # dict for json dump
-                vuln = dict()
-                vuln['func_name'] = func.name
-                vuln['address'] = str(addresses[func.name])
-                injc_vuln_group[count] = vuln
-                count = count + 1
-                print(
-                    "  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name))
-        # _____________________store result to json file_____________________
-        # get user name
-        username = getpass.getuser()
-        # get program name
-        program_path = str(program.getExecutablePath())
-        target = '\\'
-        index = -1
-        while True:
-            ret = program_path.find(target, index + 1)
-            if ret == -1:
-                break
-            index = ret
-        # print('start=%d' % index)
-        json_name = program_path[index:] + '_result.json'
-        folder_name = 'C:\\Users\\' + username + '\\results'
-        # create folder for results
-        try:
-            os.mkdir(folder_name)
-        except OSError:
-            print('File is already existed.')
-        json_path = folder_name + json_name + '_results.json'
-        with io.open(json_path, 'w') as make_file:
-            json.dump(injc_vuln_group, make_file)
-        print(injc_vuln_group)
+
+                if call_offset != func_offset:
+                    continue
+                if len(inputs) != 4:
+                    continue
+                size_varnode = inputs[-1]
+                def_pcode = size_varnode.getDef()
+
+                if def_pcode is None:
+                    continue
+
+                for v in def_pcode.getInputs():
+                    if v in signed_comparison_varnodes:
+                        num += 1
+                        print(
+                            "  [!] Alert: Function {} appears to contain a vulnerable Int overflow pattern!".format(
+                                func.name))
+                        text.append(
+                            str("  [!] Alert: Function {} appears to contain a vulnerable Int overflow pattern!".format(
+                                func.name)) + '\n')
+
+                print("\n\ncall time\n\n")
+                print(op)
+                print(size_varnode)
+
+        result['text'] = text
+        result['num'] = num
+        return result
 
 
 if __name__ == "__main__":
-    path = r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so"
-    sys_call_check(path)
+    path = r"C:\Users\jjh96\Desktop\reversing\test\intOver.exe"
+    check_int_overflow(path)

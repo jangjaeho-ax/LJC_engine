@@ -14,9 +14,12 @@ from ghidra.program.model.pcode import Varnode
 from ghidra.program.model.pcode import VarnodeAST
 from ghidra.util.task import ConsoleTaskMonitor
 
+#CWE-77 패턴을 검출 코드
 sources = [
     'snprintf',  # int snprintf ( char * s, size_t n, const char * format, ... );
     'sprintf',  # int sprintf  ( char * s, const char * format, ... );
+    'strncat',
+    'strncpy',
 ]
 
 sinks = [
@@ -74,8 +77,7 @@ def get_stack_var_from_varnode(func, varnode, program):
     # unable to resolve stack variable for given varnode
     return None
 
-
-def sys_call_check(path):
+def check_sys_call(path):
     result = {}
     text = []
     num = 0
@@ -96,6 +98,7 @@ def sys_call_check(path):
             except:
                 addresses[function.name] = []
                 addresses[function.name].append(function.getEntryPoint())
+
         # ====================================================================
         # Step 1. Check if our target has at least one source and one sink we care about
         function_names = [func.name for func in functions]
@@ -156,12 +159,12 @@ def sys_call_check(path):
                     call_target = opinputs[0]
                     call_target_addr = call_target.getAddress()
                     call_target_name = fm.getFunctionAt(call_target_addr).getName()
-
+                    #system이 받는 인수가 sprintf, snprintf와 같은 입력 함수가 입력을 받는 인수 값인 경우 취약한 패턴!!!
+                    #추가적으로 strncpy와 strncat의 경우도 외부 인수를 command에 넣기 때문에 문제가 발생할 수 있음
                     if call_target_name == "system":
                         arg = opinputs[1]
                         sv = get_stack_var_from_varnode(func, arg, program)
                         if sv:
-                            num += 1
                             addr = op.getSeqnum().getTarget()
                             sink_args.append(sv.getName())
                             print("  >> {} : system({})".format(addr, sv.getName()))
@@ -171,7 +174,6 @@ def sys_call_check(path):
                         arg = opinputs[1]
                         sv = get_stack_var_from_varnode(func, arg, program)
                         if sv:
-                            num += 1
                             addr = op.getSeqnum().getTarget()
                             source_args.append(sv.getName())
                             print("  >> {} : sprintf({}, ...)".format(addr, sv.getName()))
@@ -181,13 +183,32 @@ def sys_call_check(path):
                         arg = opinputs[1]
                         sv = get_stack_var_from_varnode(func, arg, program)
                         if sv:
-                            num += 1
                             addr = op.getSeqnum().getTarget()
                             source_args.append(sv.getName())
                             print("  >> {} : snprintf({}, ...)".format(addr, sv.getName()))
                             text.append(str("  >> {} : snprintf({}, ...)".format(addr, sv.getName())) + '\n')
 
+                    elif call_target_name == "strncat":
+                        arg = opinputs[1]
+                        sv = get_stack_var_from_varnode(func, arg, program)
+                        if sv:
+
+                            addr = op.getSeqnum().getTarget()
+                            source_args.append(sv.getName())
+                            print("  >> {} : strncat({}, ...)".format(addr, sv.getName()))
+                            text.append(str("  >> {} : strncat({}, ...)".format(addr, sv.getName())) + '\n')
+
+                    elif call_target_name == "strncpy":
+                        arg = opinputs[1]
+                        sv = get_stack_var_from_varnode(func, arg, program)
+                        if sv:
+                            addr = op.getSeqnum().getTarget()
+                            source_args.append(sv.getName())
+                            print("  >> {} : strncpy({}, ...)".format(addr, sv.getName()))
+                            text.append(str("  >> {} : strncpy({}, ...)".format(addr, sv.getName())) + '\n')
+
             if len(set(sink_args) & set(source_args)) > 0:
+                num += 1
                 # dict for json dump
                 vuln = dict()
                 vuln['func_name'] = func.name
@@ -197,6 +218,10 @@ def sys_call_check(path):
                 print(
                     "  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name))
                 text.append(str("  [!] Alert: Function {} appears to contain a vulnerable `system` call pattern!".format(func.name)) + '\n')
+
+        print("[!] Done! {} possible vulnerabilities found.".format(count))
+        text.append(str("[!] Done! {} possible vulnerabilities found.".format(count)) + '\n')
+
         # _____________________store result to json file_____________________
         # get user name
         username = getpass.getuser()
@@ -227,7 +252,7 @@ def sys_call_check(path):
         return result
 
 if __name__ == "__main__":
-    path = r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so"
-    result = sys_call_check(path)
+    path = r"C:\Users\jjh96\Desktop\reversing\test\sysCall.exe"
+    result = check_sys_call(path)
     pp(result['text'])
     print(result['num'])

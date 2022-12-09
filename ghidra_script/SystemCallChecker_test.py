@@ -15,6 +15,10 @@ from ghidra.util.task import ConsoleTaskMonitor
 sources = [
     'snprintf',  # int snprintf ( char * s, size_t n, const char * format, ... );
     'sprintf',  # int sprintf  ( char * s, const char * format, ... );
+    'strncat',
+    'strncpy',
+    'strcat',
+    'strcpy',
 ]
 
 sinks = [
