@@ -1,4 +1,3 @@
-# Checks system calls for command injection pattern
 import io
 import json
 import getpass
@@ -16,14 +15,14 @@ from ghidra.util.task import ConsoleTaskMonitor
 
 #CWE-77 패턴을 검출 코드
 sources = [
-    'snprintf',  # int snprintf ( char * s, size_t n, const char * format, ... );
-    'sprintf',  # int sprintf  ( char * s, const char * format, ... );
+    'snprintf',
+    'sprintf',
     'strncat',
     'strncpy',
 ]
 
 sinks = [
-    'system',  # int system(const char *command);
+    'system',
 ]
 
 bitness_masks = {
@@ -62,7 +61,7 @@ def get_stack_var_from_varnode(func, varnode, program):
                 if unsigned_lv_offset == defop_input_offset:
                     return lv
 
-        # If we get here, varnode is likely a "acStack##" variable.
+
         hf = get_high_function(func, program)
         lsm = hf.getLocalSymbolMap()
 
@@ -74,7 +73,7 @@ def get_stack_var_from_varnode(func, varnode, program):
                 if defop_input_offset == symbol.getStorage().getFirstVarnode().getOffset() & bitmask:
                     return symbol
 
-    # unable to resolve stack variable for given varnode
+
     return None
 
 def check_sys_call(path):
