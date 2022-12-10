@@ -53,21 +53,9 @@ def check_buf_ovfw(path):
             except:
                 addresses[function.name] = []
                 addresses[function.name].append(function.getEntryPoint())
-                '''
-        while function is not None:
-            if monitor.isCancelled():
-                return
-            if function.name in sinks:
-                try:
-                    addresses[function.name].append(function.getEntryPoint())
-                except:
-                    addresses[function.name] = []
-                    addresses[function.name].append(function.getEntryPoint())
 
-            function = flat_api.getFunctionAfter(function)
-        '''
         # ====================================================================
-        # Step 1. Check if our target has at least one source and one sink we care about
+        # 함수 중 sink에 포함되는 함수가 있는지 확인
         function_names = [func.name for func in functions]
         if  (set(sinks) & set(function_names)):
             print("This target contains interesting sink(s). Continuing analysis...")
@@ -79,12 +67,12 @@ def check_buf_ovfw(path):
             result['num'] = num
             return result
 
+        # ====================================================================
+        # sink를 call 하는 함수를 가져와서 interesting function에 넣음
         interesting_functions = []
         for func in functions:
-
             monitor = ConsoleTaskMonitor()
             called_functions = func.getCalledFunctions(monitor)
-
             called_function_names = [cf.name for cf in called_functions]
 
             sink_callers = set(called_function_names) & set(sinks)
@@ -92,7 +80,7 @@ def check_buf_ovfw(path):
             if sink_callers:
                 interesting_functions.append(func)
 
-        # Show any interesting functions found
+
         if len(interesting_functions) <= 0:
             print("\nNo interesting functions found to analyze. Done.")
             text.append("\nNo interesting functions found to analyze. Done." + '\n')
@@ -105,6 +93,8 @@ def check_buf_ovfw(path):
             for func in interesting_functions:
                 print("  {}".format(func.name))
                 text.append(str("  {}".format(func.name)) + '\n')
+        # ====================================================================
+        #interesting function을 분석
         for func_name in addresses:
             print("\nAnalyzing function: {}".format(func.name))
             text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')

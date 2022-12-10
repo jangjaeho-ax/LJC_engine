@@ -45,6 +45,7 @@ def get_so_name(root_dir):
     result['text'] = text
     result['num'] = num
     result['target_files'] = target_files
+    print(target_files)
     return result
 if __name__ == "__main__":
     path = r"C:\Users\jjh96\_test.extracted\squashfs-root\lib\librtstream.so"

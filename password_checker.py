@@ -113,7 +113,6 @@ def check_password(root_dir):
         r = search_vuln(t)
         text.append(r['text'])
         num += r['num']
-
         # print(t)
     result['text'] =text
     result['num'] = num

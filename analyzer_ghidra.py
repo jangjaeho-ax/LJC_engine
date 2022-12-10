@@ -1,12 +1,12 @@
 import pyhidra
 import getpass
 import os
-import collect_CI
+import cve_inform_checker
 from elftools.elf import elffile as elf
 import pdb
-from ghidra_script import IntOverflowChecker
-from ghidra_script import SystemCallChecker
-from ghidra_script import BufferOverflowChecker
+from ghidra_script import div_zero_checker
+from ghidra_script import sys_call_checker
+from ghidra_script import buf_overflow_checker
 
 
 #ghidra를 이용해 PE 파일 내부의 함수 리스트를 얻는 함수
@@ -30,7 +30,7 @@ class analyzer:
             return function_names
     def sys_call_check(self):
         print('analysis {}' .format(self.path))
-        SystemCallChecker.check_sys_call(self.path)
+        SystemCallChecker.check_endl_recall(self.path)
 
 
     def buf_ovrf_check(self):
@@ -76,7 +76,6 @@ if __name__ == "__main__":
     root_dir =r"C:\Users\jjh96\_test.extracted\squashfs-root\lib"
     a = analyzer(path)
 
-    a.
     #a.test()
 
     #a.get_functions()
