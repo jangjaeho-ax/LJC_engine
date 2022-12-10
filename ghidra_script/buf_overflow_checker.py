@@ -95,11 +95,11 @@ def check_buf_ovfw(path):
                 text.append(str("  {}".format(func.name)) + '\n')
         # ====================================================================
         #interesting function을 분석
-        for func_name in addresses:
+        for func in interesting_functions:
             print("\nAnalyzing function: {}".format(func.name))
             text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')
 
-            for address in addresses[func_name]:
+            for address in addresses[func.name]:
                 references = flat_api.getReferencesTo(address)
                 for ref in references:
                     from_addr = ref.getFromAddress()
@@ -109,11 +109,11 @@ def check_buf_ovfw(path):
                     if (from_ins is not None) and (to_ins is not None):
                         print('Address: {}'.format(from_addr))
                         text.append(str('Address: {}'.format(from_addr)) + '\n')
-                        print('Instruction: {}({})'.format(from_ins.toString(), func_name))
-                        text.append(str('Instruction: {}({})'.format(from_ins.toString(), func_name)) + '\n')
+                        print('Instruction: {}({})'.format(from_ins.toString(), func.name))
+                        text.append(str('Instruction: {}({})'.format(from_ins.toString(), func.name)) + '\n')
                         # dict for json dump
                         vuln = dict()
-                        vuln['func_name'] = str(func_name)
+                        vuln['func_name'] = str(func.name)
                         vuln['address'] = str(from_addr)
                         overflow_vuln_group[count] = vuln
                         count = count + 1
