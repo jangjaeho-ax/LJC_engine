@@ -5,7 +5,7 @@ import password_checker
 from ghidra_script import (buf_overflow_checker, int_overflow_checker, sys_call_checker,endless_recursive_call_checker)
 from PyQt5.QtWidgets import ( QApplication, QMainWindow,QVBoxLayout, QHBoxLayout,
                               QFontDialog,QDesktopWidget, QAction, QFileDialog,
-                              QTextBrowser, QPushButton, QWidget,
+                              QTextBrowser, QPushButton, QWidget, QGridLayout,
                               QMessageBox)
 from PyQt5.QtGui import QIcon
 
@@ -20,7 +20,7 @@ class MyApp(QMainWindow):
     def initUI(self):
         #self.textEdit = QTextEdit()
         #self.setCentralWidget(self.textEdit)
-        #self.statusBar()
+        statusbar = self.statusBar().showMessage('Ready')
 
         self.dir_path = ""
         self.file_path = ""
@@ -54,11 +54,11 @@ class MyApp(QMainWindow):
         confMenu = menubar.addMenu('&Config')
         confMenu.addAction(conf_font)
 
-        pw_test_btn = QPushButton('설정 파일 취약점')
-        int_ovrf_btn = QPushButton('cve 검색')
-        sys_call_btn = QPushButton('시스템 콜 취약점 검출')
-        buf_ovrf_btn = QPushButton('버퍼오버플로우 취약점 검출')
-        endless_call_btn = QPushButton('통제 되지 않은 재귀 취약점 검출')
+        pw_test_btn = QPushButton('패스워드 확인')
+        int_ovrf_btn = QPushButton('정수 오버플로우')
+        sys_call_btn = QPushButton('시스템 콜')
+        buf_ovrf_btn = QPushButton('버퍼 오버플로우')
+        endless_call_btn = QPushButton('무한 재귀')
 
         pw_test_btn.clicked.connect(self.click_pw_test)
         int_ovrf_btn.clicked.connect(self.click_int_ovrf)
@@ -66,27 +66,40 @@ class MyApp(QMainWindow):
         buf_ovrf_btn.clicked.connect(self.click_buf_ovrf)
         endless_call_btn.clicked.connect(self.click_endl_recall)
 
+        pw_test_btn.setMaximumHeight(100)
+        int_ovrf_btn.setMaximumHeight(100)
+        sys_call_btn.setMaximumHeight(100)
+        buf_ovrf_btn.setMaximumHeight(100)
+        endless_call_btn.setMaximumHeight(100)
+
         widget = QWidget()
+
+        grid_box =QGridLayout()
+        grid_box.addWidget(pw_test_btn, 0, 0, 1, 1)
+        grid_box.addWidget(int_ovrf_btn, 0, 1, 1, 1)
+        grid_box.addWidget(sys_call_btn, 0, 2, 1, 1)
+        grid_box.addWidget(buf_ovrf_btn, 0, 3, 1, 1)
+        grid_box.addWidget(endless_call_btn, 0, 4, 1, 1)
 
         hbox = QHBoxLayout()
         hbox.addStretch(1)
-        hbox.addWidget(pw_test_btn)
-        hbox.addWidget(int_ovrf_btn)
-        hbox.addWidget(sys_call_btn)
-        hbox.addWidget(buf_ovrf_btn)
-        hbox.addWidget(endless_call_btn)
+        hbox.addLayout(grid_box)
         hbox.addStretch(1)
 
         vbox = QVBoxLayout(widget)
         #vbox.addStretch(3)
-        vbox.addWidget(self.tb, 3)
+        vbox.addWidget(self.tb, 10)
         vbox.addLayout(hbox)
+        vbox.addStretch(1)
         #vbox.addStretch(1)
-        self.tb.append('*' * 1000)
+        self.tb.append('패스워드 확인은 디렉토리 경로를 설정해야 하며 나머지 옵션은 파일을 선택하면 됩니다.')
+        self.tb.append('dir : 분석하고자 하는 디렉토리 경로 설정')
+        self.tb.append('file : 분석하고자 하는 파일 경로 설정')
+        self.tb.append('conf : 폰트 설정')
 
         self.setCentralWidget(widget)
 
-        self.setWindowTitle('Box Layout')
+        self.setWindowTitle('취약점 검사기')
         self.resize(800, 800)
         self.center()
         self.show()
@@ -116,6 +129,7 @@ class MyApp(QMainWindow):
             result = password_checker.check_password(self.dir_path)
             self.clear_text()
             self.print_list(result['text'])
+            self.statusBar().showMessage('{0}개의 취약점 검출'.format(str(result['num'])))
             return
     def click_int_ovrf(self):
         self.append_text(self.file_path)
@@ -126,6 +140,7 @@ class MyApp(QMainWindow):
             result = int_overflow_checker.check_int_overflow(self.file_path)
             self.clear_text()
             self.print_list(result['text'])
+            self.statusBar().showMessage('{0}개의 취약점 검출'.format(str(result['num'])))
             return
     def click_sys_call(self):
         self.append_text(self.file_path)
@@ -136,6 +151,7 @@ class MyApp(QMainWindow):
             result = sys_call_checker.check_sys_call(self.file_path)
             self.clear_text()
             self.print_list(result['text'])
+            self.statusBar().showMessage('{0}개의 취약점 검출'.format(str(result['num'])))
             return
     def click_buf_ovrf(self):
         self.append_text(self.file_path)
@@ -146,6 +162,7 @@ class MyApp(QMainWindow):
             result = buf_overflow_checker.check_buf_ovfw(self.file_path)
             self.clear_text()
             self.print_list(result['text'])
+            self.statusBar().showMessage('{0}개의 취약점 검출'.format(str(result['num'])))
             return
     def click_endl_recall(self):
         self.append_text(self.file_path)
@@ -156,6 +173,7 @@ class MyApp(QMainWindow):
             result = endless_recursive_call_checker.check_endl_recall(self.file_path)
             self.clear_text()
             self.print_list(result['text'])
+            self.statusBar().showMessage('{0}개의 취약점 검출'.format(str(result['num'])))
             return
     def append_text(self, text):
         self.tb.append(text)
