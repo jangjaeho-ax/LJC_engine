@@ -1,4 +1,4 @@
-# Checks system calls for command injection pattern
+
 import io
 import json
 import getpass
@@ -13,6 +13,7 @@ from ghidra.program.model.pcode import Varnode
 from ghidra.program.model.pcode import VarnodeAST
 from ghidra.util.task import ConsoleTaskMonitor
 
+#CWE-190 패턴 중 memcpy 함수 검사
 
 sinks = [
     'memcpy'
@@ -29,53 +30,16 @@ def get_high_function(func , program):
     res = ifc.decompileFunction(func, 60, monitor)
     return res.getHighFunction()
 
-'''
-def get_stack_var_from_varnode(func, varnode, program):
-    if type(varnode) not in [Varnode, VarnodeAST]:
-        raise Exception(
-            "Invalid value passed to get_stack_var_from_varnode(). Expected `Varnode` or `VarnodeAST`, got {}.".format(
-                type(varnode)))
-
-    bitmask = bitness_masks[program.getMetadata()['Address Size']]
-
-    local_variables = func.getAllVariables()
-    vndef = varnode.getDef()
-    if vndef:
-        vndef_inputs = vndef.getInputs()
-        for defop_input in vndef_inputs:
-            defop_input_offset = defop_input.getAddress().getOffset() & bitmask
-            for lv in local_variables:
-                unsigned_lv_offset = lv.getMinAddress().getUnsignedOffset() & bitmask
-                if unsigned_lv_offset == defop_input_offset:
-                    return lv
-
-        # If we get here, varnode is likely a "acStack##" variable.
-        hf = get_high_function(func, program)
-        lsm = hf.getLocalSymbolMap()
-
-        for vndef_input in vndef_inputs:
-            defop_input_offset = vndef_input.getAddress().getOffset() & bitmask
-            for symbol in lsm.getSymbols():
-                if symbol.isParameter():
-                    continue
-                if defop_input_offset == symbol.getStorage().getFirstVarnode().getOffset() & bitmask:
-                    return symbol
-
-    # unable to resolve stack variable for given varnode
-    return None
-'''
-
-
-
-
 def check_int_overflow(path):
     result = {}
     text = []
     num = 0
 
-
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                               analyze=False) as flat_api:
+        print('[+] Checking possibility of int overflow....')
+        print('--------')
+        text.append(str('[+] Checking possibility of int overflow....') + '\n')
         program = flat_api.getCurrentProgram()
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
@@ -95,9 +59,11 @@ def check_int_overflow(path):
         function_names = [func.name for func in functions]
 
         if  (set(sinks) & set(function_names)):
-            print("This target contains interesting source(s) and sink(s). Continuing analysis...")
+            print("This target contains interesting sink(s). Continuing analysis...")
+            text.append("This target contains interesting sink(s). Continuing analysis..." + '\n')
         else:
-            print("This target does not contain interesting source(s) and sink(s). Done.")
+            print("This target does not contain interesting sink(s). Done.")
+            text.append("This target does not contain interesting  sink(s). Done." + '\n')
             return
 
         # ====================================================================
@@ -118,58 +84,50 @@ def check_int_overflow(path):
         # Show any interesting functions found
         if len(interesting_functions) <= 0:
             print("\nNo interesting functions found to analyze. Done.")
+            text.append("\nNo interesting functions found to analyze. Done." + '\n')
             return
         else:
             print("\nFound {} interesting functions to analyze:".format(len(interesting_functions)))
+            text.append(str("\nFound {} interesting functions to analyze:".format(len(interesting_functions))) + '\n')
             for func in interesting_functions:
                 print("  {}".format(func.name))
 
+        memcpy_addr = addresses['memcpy'][0]
         # ====================================================================
         # 위에서 찾은 interesting functions을 분석하는 단계
         for func in interesting_functions:
             print("\nAnalyzing function: {}".format(func.name))
+            text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')
             hf = get_high_function(func, program)
             opiter = hf.getPcodeOps()
             op = None
-            signed_comparison_varnodes = set()
-
+            signed_comparison_varnodes = []
             while opiter.hasNext():
                 op = opiter.next()
                 mnemonic = op.getMnemonic()
-                if (op.getOpcode() == ghidra.program.model.pcode.PcodeOp.INT_SLESS) or (
-                        op.getOpcode() == ghidra.program.model.pcode.PcodeOp.INT_LESS):
+                size_varnode = None
+                if mnemonic == "INT_SLESS":
                     print(op)
                     for v in op.getInputs():
                         if v.isConstant():
                             continue
-                        signed_comparison_varnodes.add(v)
-                        # print(v)
-                        # print(v.isRegister())
-                    print(signed_comparison_varnodes)
+                        signed_comparison_varnodes.append(v)
 
-                if op.getOpcode() == ghidra.program.model.pcode.PcodeOp.CALL:
+                if mnemonic == "CALL":
+                    print(op)
+                    inputs = op.getInputs()
+                    call_site = inputs[0]
+                    #print('{0} : {1}'.format(memcpy_addr,call_addr))
+                    call_addr = call_site.getAddress()
+                    print('{0} : {1} : {2}'.format(memcpy_addr, call_addr,memcpy_addr==call_addr))
+                    if call_addr == memcpy_addr:
+                        size_varnode = inputs[-1]
+                        #print(size_varnodes)
+                if size_varnode is None:
                     continue
-                inputs = op.getInputs()
-                call_site = inputs[0]
-
-                # 주소가 아닌 경우 continue
-                if call_site.isAddress() == False:
-                    continue
-
-                call_offset = call_site.getOffset()
-                func_offset = func.getEntryPoint().getOffset()
-
-
-                if call_offset != func_offset:
-                    continue
-                if len(inputs) != 4:
-                    continue
-                size_varnode = inputs[-1]
                 def_pcode = size_varnode.getDef()
-
                 if def_pcode is None:
                     continue
-
                 for v in def_pcode.getInputs():
                     if v in signed_comparison_varnodes:
                         num += 1
@@ -179,10 +137,8 @@ def check_int_overflow(path):
                         text.append(
                             str("  [!] Alert: Function {} appears to contain a vulnerable Int overflow pattern!".format(
                                 func.name)) + '\n')
-
-                print("\n\ncall time\n\n")
-                print(op)
-                print(size_varnode)
+        print("[!] Done! {} possible vulnerabilities found.".format(num))
+        text.append(str("[!] Done! {} possible vulnerabilities found.".format(num)) + '\n')
 
         result['text'] = text
         result['num'] = num

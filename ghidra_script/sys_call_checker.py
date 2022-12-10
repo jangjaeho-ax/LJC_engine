@@ -84,6 +84,9 @@ def check_sys_call(path):
 
     with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
                               analyze=False) as flat_api:
+        print('[+] Checking possibility of system call injection....')
+        print('--------')
+        text.append(str('[+] Checking possibility of system call injection....') + '\n')
         program = flat_api.getCurrentProgram()
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
@@ -100,7 +103,7 @@ def check_sys_call(path):
                 addresses[function.name].append(function.getEntryPoint())
 
         # ====================================================================
-        # Step 1. Check if our target has at least one source and one sink we care about
+        # 함수 중 sink와 source에 포함되는 함수가 있는지 확인
         function_names = [func.name for func in functions]
         if (set(sources) & set(function_names)) and (set(sinks) & set(function_names)):
             print("This target contains interesting source(s) and sink(s). Continuing analysis...")
@@ -113,7 +116,7 @@ def check_sys_call(path):
             return result
 
         # ====================================================================
-        # Step 2. Find functions that calls at least one source and one sink
+        # sink와 source를 call 하는 함수를 가져와서 interesting function에 넣음
         interesting_functions = []
         for func in functions:
             monitor = ConsoleTaskMonitor()
@@ -126,7 +129,7 @@ def check_sys_call(path):
             if source_callers and sink_callers:
                 interesting_functions.append(func)
 
-        # Show any interesting functions found
+
         if len(interesting_functions) <= 0:
             print("\nNo interesting functions found to analyze. Done.")
             text.append("\nNo interesting functions found to analyze. Done." + '\n')
@@ -141,14 +144,14 @@ def check_sys_call(path):
                 text.append(str("  {}".format(func.name)) + '\n')
 
         # ====================================================================
-        # Step 3. Dig into interesting functions
+        # interesting function을 분석
         for func in interesting_functions:
             print("\nAnalyzing function: {}".format(func.name))
             text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')
 
             source_args = []
             sink_args = []
-
+            #함수를 디컴파일 해서 pcode를 가져올수 있게 만듬
             hf = get_high_function(func, program)
             opiter = hf.getPcodeOps()
             while opiter.hasNext():
