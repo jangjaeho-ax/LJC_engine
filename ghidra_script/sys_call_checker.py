@@ -86,7 +86,10 @@ def check_sys_call(path):
         print('[+] Checking possibility of system call injection....')
         print('--------')
         text.append(str('[+] Checking possibility of system call injection....') + '\n')
+        from ghidra.program.util import GhidraProgramUtilities
         program = flat_api.getCurrentProgram()
+        if GhidraProgramUtilities.shouldAskToAnalyze(program):
+            flat_api.analyzeAll(program)
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
         # vuln group for json dump
@@ -223,7 +226,7 @@ def check_sys_call(path):
 
         print("[!] Done! {} possible vulnerabilities found.".format(count))
         text.append(str("[!] Done! {} possible vulnerabilities found.".format(count)) + '\n')
-
+        '''
         # _____________________store result to json file_____________________
         # get user name
         username = getpass.getuser()
@@ -248,7 +251,7 @@ def check_sys_call(path):
         with io.open(json_path, 'w') as make_file:
             json.dump(injc_vuln_group, make_file)
         print(injc_vuln_group)
-
+        '''
         result['text'] = text
         result['num'] = num
         return result

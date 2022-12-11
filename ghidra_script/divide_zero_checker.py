@@ -50,15 +50,17 @@ def get_high_function(func , program):
     res = ifc.decompileFunction(func, 60, monitor)
     return res.getHighFunction()
 
-def check_sys_call(path):
+def check_div_zero(path):
     result = {}
     text = []
     num = 0
 
     with pyhidra.open_program(path, project_location=r".\exam",
                               analyze=False) as flat_api:
+        from ghidra.program.util import GhidraProgramUtilities
         program = flat_api.getCurrentProgram()
-        #flat_api.analyzeAll(program)
+        if GhidraProgramUtilities.shouldAskToAnalyze(program):
+            flat_api.analyzeAll(program)
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
 
@@ -86,6 +88,8 @@ def check_sys_call(path):
         for func in interesting_functions:
             print("\nAnalyzing function: {}".format(func.name))
             text.append(str("\nAnalyzing function: {}".format(func.name)) + '\n')
+            print(func.getID())
+            '''
             #local_variables = func.getAllVariables()
             #print(local_variables)
             #print('\n\n')
@@ -120,15 +124,14 @@ def check_sys_call(path):
                 text.append(
                     str("  [!] Alert: Function {} appears to contain a 'Div Zero' pattern!".format(
                         func.name)) + '\n')
-
-
+            '''
 
         result['text'] = text
         result['num'] = num
         return result
 
 if __name__ == "__main__":
-    path = r"C:\Users\jjh96\Desktop\reversing\test\endless.exe"
-    result = check_sys_call(path)
+    path = r"C:\Users\jjh96\Desktop\reversing\test\divZero.exe"
+    result = check_div_zero(path)
     #pp(result['text'])
     #print(result['num'])

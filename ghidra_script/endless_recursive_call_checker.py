@@ -56,8 +56,10 @@ def check_endl_recall(path):
         print('[+] Checking possibility of endless recursive call....')
         print('--------')
         text.append(str('[+] Checking possibility of endless recursive call....') + '\n')
+        from ghidra.program.util import GhidraProgramUtilities
         program = flat_api.getCurrentProgram()
-        #flat_api.analyzeAll(program)
+        if GhidraProgramUtilities.shouldAskToAnalyze(program):
+            flat_api.analyzeAll(program)
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
 

@@ -35,7 +35,10 @@ def check_buf_ovfw(path):
         print('--------')
         text.append(str('[+] Checking possibility of buffer overflow....') + '\n')
         text.append(str('--------') + '\n')
+        from ghidra.program.util import GhidraProgramUtilities
         program = flat_api.getCurrentProgram()
+        if GhidraProgramUtilities.shouldAskToAnalyze(program):
+            flat_api.analyzeAll(program)
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
         listing = program.getListing()
@@ -124,30 +127,6 @@ def check_buf_ovfw(path):
 
         print("[!] Done! {} possible vulnerabilities found.".format(count))
         text.append(str("[!] Done! {} possible vulnerabilities found.".format(count)) + '\n')
-        print(overflow_vuln_group)
-        # _____________________store result to json file_____________________
-        # get user name
-        username = getpass.getuser()
-        # get program name
-        program_path = str(program.getExecutablePath())
-        target = '\\'
-        index = -1
-        while True:
-            ret = program_path.find(target, index + 1)
-            if ret == -1:
-                break
-            index = ret
-        # print('start=%d' % index)
-        json_name = program_path[index:] + '_result.json'
-        folder_name = 'C:\\Users\\' + username + '\\results'
-        # create folder for results
-        try:
-            os.mkdir(folder_name)
-        except OSError:
-            print('File is already existed.')
-        json_path = folder_name + json_name + '_results.json'
-        with io.open(json_path, 'w') as make_file:
-            json.dump(overflow_vuln_group, make_file)
 
         result['text'] = text
         result['num'] = num

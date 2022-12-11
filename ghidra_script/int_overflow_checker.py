@@ -40,7 +40,10 @@ def check_int_overflow(path):
         print('[+] Checking possibility of int overflow....')
         print('--------')
         text.append(str('[+] Checking possibility of int overflow....') + '\n')
+        from ghidra.program.util import GhidraProgramUtilities
         program = flat_api.getCurrentProgram()
+        if GhidraProgramUtilities.shouldAskToAnalyze(program):
+            flat_api.analyzeAll(program)
         fm = program.getFunctionManager()
         functions = [func for func in fm.getFunctions(True)]
         # vuln group for json dump
