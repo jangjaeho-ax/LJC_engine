@@ -1,8 +1,6 @@
-import sys
 import boto3
 from botocore.exceptions import ClientError
 import paramiko
-import os
 import json
 from time import sleep
 import os, sys
