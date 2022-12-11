@@ -51,7 +51,7 @@ def check_endl_recall(path):
     text = []
     num = 0
 
-    with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
+    with pyhidra.open_program(path, project_location=r".\exam",
                               analyze=False) as flat_api:
         print('[+] Checking possibility of endless recursive call....')
         print('--------')

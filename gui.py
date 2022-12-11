@@ -1,7 +1,7 @@
 
 import sys
 import password_checker
-
+import image_to_file_system
 from ghidra_script import (buf_overflow_checker, int_overflow_checker, sys_call_checker,endless_recursive_call_checker)
 from PyQt5.QtWidgets import ( QApplication, QMainWindow,QVBoxLayout, QHBoxLayout,
                               QFontDialog,QDesktopWidget, QAction, QFileDialog,
@@ -54,18 +54,21 @@ class MyApp(QMainWindow):
         confMenu = menubar.addMenu('&Config')
         confMenu.addAction(conf_font)
 
-        pw_test_btn = QPushButton('패스워드 확인')
+        bin_extract_btn = QPushButton('EC2 파일 송수신')
+        pw_test_btn = QPushButton('취약한 패스워드')
         int_ovrf_btn = QPushButton('정수 오버플로우')
-        sys_call_btn = QPushButton('시스템 콜')
+        sys_call_btn = QPushButton('명령어 삽입')
         buf_ovrf_btn = QPushButton('버퍼 오버플로우')
-        endless_call_btn = QPushButton('무한 재귀')
+        endless_call_btn = QPushButton('통제되지 않는 재귀')
 
+        bin_extract_btn.clicked.connect(self.click_bin_extract)
         pw_test_btn.clicked.connect(self.click_pw_test)
         int_ovrf_btn.clicked.connect(self.click_int_ovrf)
         sys_call_btn.clicked.connect(self.click_sys_call)
         buf_ovrf_btn.clicked.connect(self.click_buf_ovrf)
         endless_call_btn.clicked.connect(self.click_endl_recall)
 
+        bin_extract_btn.setMaximumHeight(100)
         pw_test_btn.setMaximumHeight(100)
         int_ovrf_btn.setMaximumHeight(100)
         sys_call_btn.setMaximumHeight(100)
@@ -75,11 +78,12 @@ class MyApp(QMainWindow):
         widget = QWidget()
 
         grid_box =QGridLayout()
-        grid_box.addWidget(pw_test_btn, 0, 0, 1, 1)
-        grid_box.addWidget(int_ovrf_btn, 0, 1, 1, 1)
-        grid_box.addWidget(sys_call_btn, 0, 2, 1, 1)
-        grid_box.addWidget(buf_ovrf_btn, 0, 3, 1, 1)
-        grid_box.addWidget(endless_call_btn, 0, 4, 1, 1)
+        grid_box.addWidget(bin_extract_btn, 0, 0, 1, 1)
+        grid_box.addWidget(pw_test_btn, 0, 1, 1, 1)
+        grid_box.addWidget(int_ovrf_btn, 0, 2, 1, 1)
+        grid_box.addWidget(sys_call_btn, 0, 3, 1, 1)
+        grid_box.addWidget(buf_ovrf_btn, 0, 4, 1, 1)
+        grid_box.addWidget(endless_call_btn, 0, 5, 1, 1)
 
         hbox = QHBoxLayout()
         hbox.addStretch(1)
@@ -120,6 +124,19 @@ class MyApp(QMainWindow):
         font, ok = QFontDialog.getFont()
         if ok:
            self.tb.setFont(font)
+
+    def click_bin_extract(self):
+        self.append_text(self.dir_path)
+        if self.dir_path == "" and self.file_path =='':
+            QMessageBox.information(self, '디렉토리 & 파일 경로 없음', '먼저 디렉토리 & 파일 경로를 설정해주세요!')
+            return
+        else:
+            result = image_to_file_system.binwalk(self.file_path, self.dir_path)
+            self.clear_text()
+            self.print_list(result['text'])
+            if result['num'] == -1:
+                self.statusBar().showMessage('서버 통신 오류 !! EC2 서버 확인')
+            return
     def click_pw_test(self):
         self.append_text(self.dir_path)
         if self.dir_path == "":

@@ -55,7 +55,7 @@ def check_sys_call(path):
     text = []
     num = 0
 
-    with pyhidra.open_program(path, project_location=r"C:\Users\jjh96\Desktop\reversing\exam",
+    with pyhidra.open_program(path, project_location=r".\exam",
                               analyze=False) as flat_api:
         program = flat_api.getCurrentProgram()
         #flat_api.analyzeAll(program)
